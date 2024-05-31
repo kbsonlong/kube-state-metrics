@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	basemetrics "k8s.io/component-base/metrics"
 	"k8s.io/utils/net"
@@ -37,6 +38,7 @@ import (
 
 var (
 	descPodLabelsDefaultLabels = []string{"namespace", "pod", "uid"}
+	descPodLabelsAppendLabels  = []string{"app", "project_name", "deployment_name", "deploy_type", "op_admin"}
 	podStatusReasons           = []string{"Evicted", "NodeAffinity", "NodeLost", "Shutdown", "UnexpectedAdmissionError"}
 )
 
@@ -1770,6 +1772,10 @@ func wrapPodFunc(f func(*v1.Pod) *metric.Family) func(interface{}) *metric.Famil
 
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys, m.LabelValues = mergeKeyValues(descPodLabelsDefaultLabels, []string{pod.Namespace, pod.Name, string(pod.UID)}, m.LabelKeys, m.LabelValues)
+			for _, it := range descPodLabelsAppendLabels {
+				m.LabelKeys = append(m.LabelKeys, it)
+				m.LabelValues = append(m.LabelValues, pod.Labels[strings.Replace(it, "_", "-", -1)])
+			}
 		}
 
 		return metricFamily
